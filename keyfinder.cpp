@@ -10,14 +10,15 @@
 #include <utility>
 #include <map>
 #include <thread>
+#include <mutex>
 
 using namespace std;
 
 using biShort = pair<unsigned short, unsigned short>;
 
 mutex mut;
-vector<biShort> list;
-map<biShort, biShort> WList;
+vector <biShort> list;
+map <biShort, biShort> WList;
 
 biShort decode(biShort v, biShort k) {
     unsigned short n = 32, sum, y = v.first, z = v.second,
@@ -43,7 +44,7 @@ biShort encode(biShort v, biShort k) {
 }
 
 void calc(unsigned short limiteHaute, unsigned short limiteBasse, unsigned short firstPart) {
-    vector<biShort> Tmplist;
+    vector <biShort> Tmplist;
     for (unsigned short k = limiteBasse; k < limiteHaute; k++) {
         Tmplist.emplace_back(biShort(firstPart, k));
     }
@@ -60,7 +61,7 @@ void computeKeyList() {
     auto max_thread = thread::hardware_concurrency();
 
     do {
-        vector<thread> threadList;
+        vector <thread> threadList;
         for (unsigned int i = 1; i < max_thread; i++) {
             threadList.emplace_back(
                     thread(
@@ -87,7 +88,7 @@ void threadEncode(biShort P, biShort k) {
     mut.unlock();
 }
 
-void threadDecode(biShort C, biShort k, vector<biShort> *KaCandidate, vector<biShort> *KbCandidate) {
+void threadDecode(biShort C, biShort k, vector <biShort> *KaCandidate, vector <biShort> *KbCandidate) {
     auto decoded = decode(C, k);
     mut.lock();
     if (WList[decoded].first == 0x0000 && WList[decoded].second == 0x0000) {
@@ -99,12 +100,12 @@ void threadDecode(biShort C, biShort k, vector<biShort> *KaCandidate, vector<biS
     mut.unlock();
 }
 
-pair<vector<biShort>, vector<biShort>> myfind(biShort P, biShort C, vector<biShort> *K, vector<biShort> *k) {
+pair <vector<biShort>, vector<biShort>> myfind(biShort P, biShort C, vector <biShort> *K, vector <biShort> *k) {
     WList.clear();
-    vector<biShort> KaCandidate, KbCandidate;
+    vector <biShort> KaCandidate, KbCandidate;
 
     printf("encode begin\n");
-    vector<thread> threadList;
+    vector <thread> threadList;
     auto maxThread = thread::hardware_concurrency();
     int i = 0;
     for (auto &it: *K) {
@@ -159,7 +160,7 @@ int main() {
     computeKeyList();
     printf("Key Gen: %ld\n", list.size());
 
-    vector<pair<biShort, biShort >> knowSolution;
+    vector <pair<biShort, biShort >> knowSolution;
 
     knowSolution.emplace_back(biShort(0x0001, 0x0002), biShort(0x18b1, 0xb6ae));
     knowSolution.emplace_back(biShort(0x1234, 0x5678), biShort(0x4ad4, 0x423d));
@@ -167,7 +168,7 @@ int main() {
     knowSolution.emplace_back(biShort(0x9abc, 0xdeff), biShort(0x0b4e, 0x111d));
     printf("knowSolution added\n");
 
-    pair<vector<biShort>, vector<biShort>> candidates(list, list);
+    pair <vector<biShort>, vector<biShort>> candidates(list, list);
     list.clear();
 
     int i = 0;
