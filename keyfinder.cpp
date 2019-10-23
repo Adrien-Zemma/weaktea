@@ -186,7 +186,6 @@ int main() {
                 &candidates.second
         );
         printf("candidate size: %ld\n", candidates.first.size());
-        break;
         if (candidates.first.size() <= 1 && candidates.second.size() <= 1) {
             break;
         }
