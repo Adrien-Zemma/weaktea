@@ -90,7 +90,7 @@ int main() {
     pair<vector<biShort>, vector<biShort>> candidates(KeyList, KeyList);
     int i = 0;
     for (auto &solution:knowSolution) {
-        printf("itération: %d\n", i++);
+        printf("iteration: %d\n", i++);
         if (candidates.first.size() != 1 && candidates.second.size() != 1) {
             candidates = myfind(
                     biShort(0x0001, 0x0002),
