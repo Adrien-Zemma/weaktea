@@ -13,6 +13,7 @@
 #include <mutex>
 #include <iostream>
 #include <algorithm>
+#include <unistd.h>
 
 using namespace std;
 
@@ -21,6 +22,8 @@ using biShort = pair<unsigned short, unsigned short>;
 mutex mut;
 vector<biShort> list;
 map<biShort, biShort> WList;
+unsigned long int compte = 0;
+vector<biShort> KaCandidate, KbCandidate;
 
 biShort decode(biShort v, biShort k) {
     unsigned short n = 32, sum, y = v.first, z = v.second,
@@ -58,7 +61,7 @@ void calc(unsigned short limiteHaute, unsigned short limiteBasse, unsigned short
     mut.unlock();
 }
 
-void computeKeyList() {
+/*void computeKeyList() {
     unsigned short k = 0;
     auto max_thread = thread::hardware_concurrency();
 
@@ -69,7 +72,7 @@ void computeKeyList() {
                     thread(
                             calc,
                             (USHRT_MAX / (unsigned short) max_thread) * (unsigned short) i,
-                            (USHRT_MAX / (unsigned short) max_thread) * (unsigned short) (i - 1),
+                            (USHRT_MAX / (unsigned short) max_thread) * (unsigned short) (i - 1) + (1 % i),
                             k
                     )
             );
@@ -81,9 +84,9 @@ void computeKeyList() {
         }
         k++;
     } while (k < USHRT_MAX);
-}
+}*/
 
-/*void computeKeyList() {
+void computeKeyList() {
     biShort k(0xbbbb, 0x1111);
     do {
         k.second = 0x2400;
@@ -93,20 +96,16 @@ void computeKeyList() {
         } while (k.second < 0x2708);
         k.first++;
     } while (k.first < 0xdeae);
-}*/
-
-void threadEncode(biShort P, vector<biShort> klist) {
-    cout << "Encode thread size: " << klist.size() << endl;
-    for (auto &it: klist) {
-        auto tmp = encode(P, it);
-        mut.lock();
-        WList.insert({tmp, it});
-        mut.unlock();
-    }
 }
 
-void threadDecode(biShort C, vector<biShort> k, vector<biShort> *KaCandidate, vector<biShort> *KbCandidate) {
-    cout << "Decode thread size: " << k.size() << endl;
+void threadEncode(biShort P, biShort K) {
+    auto tmp = encode(P, K);
+    mut.lock();
+    WList.insert({tmp, K});
+    mut.unlock();
+}
+
+void threadDecode(biShort C, vector<biShort> k) {
     for (auto &it:k) {
         auto decoded = decode(C, it);
         mut.lock();
@@ -115,70 +114,60 @@ void threadDecode(biShort C, vector<biShort> k, vector<biShort> *KaCandidate, ve
             mut.unlock();
             continue;
         }
-        KaCandidate->emplace_back(tmp);
-        KbCandidate->emplace_back(it);
+        KaCandidate.emplace_back(tmp);
+        KbCandidate.emplace_back(it);
         mut.unlock();
     }
 }
 
 void myfindEncode(vector<biShort> *K, biShort P) {
     vector<thread> threadList;
-    auto maxThread = thread::hardware_concurrency();
-    unsigned int cuter = 1;
+    auto maxThread = thread::hardware_concurrency() - 2;
+    unsigned long cuter = 1;
+    int i = 0;
 
-    auto Ksize = K->size();
-    printf("K size: %ld\n", K->size());
-    while (cuter < maxThread) {
-        printf("encode from %lu to %lu\n", (Ksize / maxThread * (cuter - 1)) + (1 % cuter),
-               (Ksize / maxThread * (cuter) + 1));
-
-        try {
-            auto tmp = vector<biShort>(K->begin() + (Ksize / maxThread * (cuter - 1)) + (1 % cuter),
-                                       K->begin() + (Ksize / maxThread * (cuter) + 1));
-            threadList.emplace_back(thread(threadEncode, P, tmp));
-            cuter++;
-        } catch (const std::length_error &le) {
-            fprintf(stderr, "%s", le.what());
-            break;
+    for (auto &it: *K) {
+        if (i % maxThread == 0) {
+            for (auto &soloThread: threadList) {
+                if (soloThread.joinable()) {
+                    soloThread.join();
+                }
+            }
+            i = 0;
+            threadList.clear();
         }
-
-
+        i++;
+        threadList.emplace_back(thread(threadEncode, P, it));
     }
-    auto rest = vector<biShort>(K->begin() + (K->size() / maxThread * (cuter - 1)), K->end());
-    threadList.emplace_back(thread(threadEncode, P, rest));
-    for (auto &it: threadList) {
-        if (it.joinable()) {
-            it.join();
+    for (auto &soloThread: threadList) {
+        if (soloThread.joinable()) {
+            soloThread.join();
         }
     }
-    threadList.clear();
 }
 
 pair<vector<biShort>, vector<biShort>> myfindDecripte(vector<biShort> *k, biShort C) {
-    vector<biShort> KaCandidate, KbCandidate;
+    KaCandidate.clear();
+    KbCandidate.clear();
     vector<thread> threadList;
     auto maxThread = thread::hardware_concurrency();
     unsigned int cuter = 1;
 
+
     auto ksize = k->size();
-    printf("k size: %ld\n", k->size());
     while (cuter < maxThread) {
-        printf("decode from %lu to %lu\n", (ksize / maxThread * (cuter - 1)) + 1 % cuter,
-               (ksize / maxThread * (cuter) + 1));
         try {
-            auto tmp = vector<biShort>(k->begin() + (ksize / maxThread * (cuter - 1)) + 1 % cuter,
+            auto tmp = vector<biShort>(k->begin() + (ksize / maxThread * (cuter - 1)) + (1 % cuter),
                                        k->begin() + (ksize / maxThread * (cuter)));
-            threadList.emplace_back(thread(threadDecode, C, tmp, &KaCandidate, &KbCandidate));
+            threadList.emplace_back(thread(threadDecode, C, tmp));
             cuter++;
         } catch (const std::length_error &le) {
             fprintf(stderr, "%s", le.what());
             break;
         }
-
-
     }
-    auto rest = vector<biShort>(k->begin() + (k->size() / maxThread * (cuter - 1)), k->end());
-    threadList.emplace_back(thread(threadDecode, C, rest, &KaCandidate, &KbCandidate));
+    auto rest = vector<biShort>(k->begin() + (k->size() / maxThread * (cuter - 1) + (1 % cuter)), k->end());
+    threadList.emplace_back(thread(threadDecode, C, rest));
     for (auto &it: threadList) {
         if (it.joinable()) {
             it.join();
@@ -217,7 +206,7 @@ int main() {
     int i = 0;
     for (auto &solution:knowSolution) {
         printf("itération: %d\n", i++);
-        printf("size: %ld, %ld\n", candidates.first.size(), candidates.second.size());
+        printf("size: %ld\n", candidates.first.size());
         candidates = myfind(
                 solution.first,
                 solution.second,
