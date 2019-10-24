@@ -58,7 +58,7 @@ void calc(unsigned short limiteHaute, unsigned short limiteBasse, unsigned short
     mut.unlock();
 }
 
-/*void computeKeyList() {
+void computeKeyList() {
     unsigned short k = 0;
     auto max_thread = thread::hardware_concurrency();
 
@@ -81,9 +81,9 @@ void calc(unsigned short limiteHaute, unsigned short limiteBasse, unsigned short
         }
         k++;
     } while (k < USHRT_MAX);
-}*/
+}
 
-void computeKeyList() {
+/*void computeKeyList() {
     biShort k(0xbbbb, 0x1111);
     do {
         k.second = 0x2400;
@@ -93,7 +93,7 @@ void computeKeyList() {
         } while (k.second < 0x2708);
         k.first++;
     } while (k.first < 0xdeae);
-}
+}*/
 
 void threadEncode(biShort P, vector<biShort> klist) {
     cout << "Encode thread size: " << klist.size() << endl;
