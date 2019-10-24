@@ -20,10 +20,10 @@ using namespace std;
 using biShort = pair<unsigned short, unsigned short>;
 
 mutex mut;
-vector<biShort> list;
-map<biShort, biShort> WList;
+vector <biShort> list;
+map <biShort, biShort> WList;
 unsigned long int compte = 0;
-vector<biShort> KaCandidate, KbCandidate;
+vector <biShort> KaCandidate, KbCandidate;
 
 biShort decode(biShort v, biShort k) {
     unsigned short n = 32, sum, y = v.first, z = v.second,
@@ -49,7 +49,7 @@ biShort encode(biShort v, biShort k) {
 }
 
 void calc(unsigned short limiteHaute, unsigned short limiteBasse, unsigned short firstPart) {
-    vector<biShort> Tmplist;
+    vector <biShort> Tmplist;
     for (unsigned short k = limiteBasse; k < limiteHaute; k++) {
         Tmplist.emplace_back(biShort(firstPart, k));
     }
@@ -61,12 +61,12 @@ void calc(unsigned short limiteHaute, unsigned short limiteBasse, unsigned short
     mut.unlock();
 }
 
-/*void computeKeyList() {
+void computeKeyList() {
     unsigned short k = 0;
     auto max_thread = thread::hardware_concurrency();
 
     do {
-        vector<thread> threadList;
+        vector <thread> threadList;
         for (unsigned int i = 1; i < max_thread; i++) {
             threadList.emplace_back(
                     thread(
@@ -84,9 +84,9 @@ void calc(unsigned short limiteHaute, unsigned short limiteBasse, unsigned short
         }
         k++;
     } while (k < USHRT_MAX);
-}*/
+}
 
-void computeKeyList() {
+/*void computeKeyList() {
     biShort k(0xbbbb, 0x1111);
     do {
         k.second = 0x2400;
@@ -96,7 +96,7 @@ void computeKeyList() {
         } while (k.second < 0x2708);
         k.first++;
     } while (k.first < 0xdeae);
-}
+}*/
 
 void threadEncode(biShort P, biShort K) {
     auto tmp = encode(P, K);
@@ -105,7 +105,7 @@ void threadEncode(biShort P, biShort K) {
     mut.unlock();
 }
 
-void threadDecode(biShort C, vector<biShort> k) {
+void threadDecode(biShort C, vector <biShort> k) {
     for (auto &it:k) {
         auto decoded = decode(C, it);
         mut.lock();
@@ -120,8 +120,8 @@ void threadDecode(biShort C, vector<biShort> k) {
     }
 }
 
-void myfindEncode(vector<biShort> *K, biShort P) {
-    vector<thread> threadList;
+void myfindEncode(vector <biShort> *K, biShort P) {
+    vector <thread> threadList;
     auto maxThread = thread::hardware_concurrency() - 2;
     unsigned long cuter = 1;
     int i = 0;
@@ -146,10 +146,10 @@ void myfindEncode(vector<biShort> *K, biShort P) {
     }
 }
 
-pair<vector<biShort>, vector<biShort>> myfindDecripte(vector<biShort> *k, biShort C) {
+pair <vector<biShort>, vector<biShort>> myfindDecripte(vector <biShort> *k, biShort C) {
     KaCandidate.clear();
     KbCandidate.clear();
-    vector<thread> threadList;
+    vector <thread> threadList;
     auto maxThread = thread::hardware_concurrency();
     unsigned int cuter = 1;
 
@@ -177,7 +177,7 @@ pair<vector<biShort>, vector<biShort>> myfindDecripte(vector<biShort> *k, biShor
     return {KaCandidate, KbCandidate};
 }
 
-pair<vector<biShort>, vector<biShort>> myfind(biShort P, biShort C, vector<biShort> K, vector<biShort> k) {
+pair <vector<biShort>, vector<biShort>> myfind(biShort P, biShort C, vector <biShort> K, vector <biShort> k) {
     WList.clear();;
 
     printf("encode begin\n");
@@ -195,13 +195,13 @@ int main() {
     fprintf(stderr, "Key Gen begin\n");
     computeKeyList();
     fprintf(stderr, "Key Gen: %ld\n", list.size());
-    vector<pair<biShort, biShort >> knowSolution;
+    vector <pair<biShort, biShort >> knowSolution;
     knowSolution.emplace_back(biShort(0x0001, 0x0002), biShort(0x18b1, 0xb6ae));
     knowSolution.emplace_back(biShort(0x1234, 0x5678), biShort(0x4ad4, 0x423d));
     knowSolution.emplace_back(biShort(0x6789, 0xdabc), biShort(0xde10, 0x1250));
     knowSolution.emplace_back(biShort(0x9abc, 0xdeff), biShort(0x0b4e, 0x111d));
     printf("knowSolution added\n");
-    pair<vector<biShort>, vector<biShort>> candidates(list, list);
+    pair <vector<biShort>, vector<biShort>> candidates(list, list);
     list.clear();
     int i = 0;
     for (auto &solution:knowSolution) {
